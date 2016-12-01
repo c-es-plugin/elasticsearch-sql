@@ -153,5 +153,3 @@ http://localhost:9200/_sql/_explain?sql=select * from indexName limit 10
 *  ES GEO_DISTANCE
 *  ES GEOHASH_GRID aggregation
 
-
-
