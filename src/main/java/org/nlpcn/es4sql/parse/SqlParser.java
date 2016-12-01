@@ -1,21 +1,24 @@
 package org.nlpcn.es4sql.parse;
 
-import java.util.*;
-
+import com.alibaba.druid.sql.ast.SQLCommentHint;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLOrderBy;
+import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
-import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlSelectGroupByExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-
-
-import org.nlpcn.es4sql.Util;
 import org.nlpcn.es4sql.domain.*;
 import org.nlpcn.es4sql.domain.Where.CONN;
 import org.nlpcn.es4sql.domain.hints.Hint;
 import org.nlpcn.es4sql.domain.hints.HintFactory;
 import org.nlpcn.es4sql.exception.SqlParseException;
 import org.nlpcn.es4sql.spatial.SpatialParamsFactory;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * es sql support
@@ -51,7 +54,8 @@ public class SqlParser {
         select.getHints().addAll(parseHints(query.getHints()));
 
         findLimit(query.getLimit(), select);
-
+        //TODO 修改
+        //select.setOrderBys(findOrderBy(query.getOrderBy()));
         findOrderBy(query, select);
 
         findGroupBy(query, select);
@@ -150,7 +154,7 @@ public class SqlParser {
                 if(Condition.OPEAR.methodNameToOpear.containsKey(methodName)){
                     Object[] methodParametersValue = getMethodValuesWithSubQueries(method);
 
-                    Condition condition = null; 
+                    Condition condition = null;
 
                     if(isNested)
                     	condition = new Condition(CONN.valueOf(opear) ,soExpr.getLeft().toString(), Condition.OPEAR.methodNameToOpear.get(methodName),methodParametersValue, nestedType);
@@ -197,7 +201,7 @@ public class SqlParser {
                 isChildren = true;
             }
 
-            Condition condition = null; 
+            Condition condition = null;
 
             if(isNested)
             	condition = new Condition(CONN.valueOf(opear), leftSide, siExpr.isNot() ? "NOT IN" : "IN", parseValue(siExpr.getTargetList()), nestedType);
@@ -228,7 +232,7 @@ public class SqlParser {
                 isChildren = true;
             }
 
-            Condition condition = null; 
+            Condition condition = null;
             		
             if(isNested)
             	condition = new Condition(CONN.valueOf(opear), leftSide, between.isNot() ? "NOT BETWEEN" : "BETWEEN", new Object[]{parseValue(between.beginExpr), parseValue(between.endExpr)}, nestedType);
@@ -340,7 +344,7 @@ public class SqlParser {
                 isChildren = true;
             }
 
-            Condition condition = null; 
+            Condition condition = null;
 
             if(isNested)
             	condition = new Condition(CONN.valueOf(opear), leftSide, sqlIn.isNot() ? "NOT IN" : "IN", subQueryExpression, nestedType);
@@ -402,7 +406,7 @@ public class SqlParser {
 	}
 
 
-    private void findSelect(MySqlSelectQueryBlock query, Select select,String tableAlias) throws SqlParseException {
+    private void findSelect(MySqlSelectQueryBlock query, Select select, String tableAlias) throws SqlParseException {
         List<SQLSelectItem> selectList = query.getSelectList();
         for (SQLSelectItem sqlSelectItem : selectList) {
             Field field = FieldMaker.makeField(sqlSelectItem.getExpr(), sqlSelectItem.getAlias(),tableAlias);
@@ -486,6 +490,14 @@ public class SqlParser {
         return firstAlias;
     }
 
+    private List<Order> findOrderBy(SQLOrderBy orderBy){
+        List<SQLSelectOrderByItem> items = orderBy.getItems();
+        for (SQLSelectOrderByItem sqlSelectOrderByItem : items) {
+            SQLExpr expr = sqlSelectOrderByItem.getExpr();
+        }
+        return new ArrayList<Order>();
+    }
+
 	private void findOrderBy(MySqlSelectQueryBlock query, Select select) throws SqlParseException {
 		SQLOrderBy orderBy = query.getOrderBy();
 
@@ -501,8 +513,9 @@ public class SqlParser {
     private void addOrderByToSelect(Select select, List<SQLSelectOrderByItem> items, String alias) throws SqlParseException {
         for (SQLSelectOrderByItem sqlSelectOrderByItem : items) {
             SQLExpr expr = sqlSelectOrderByItem.getExpr();
-            String orderByName = FieldMaker.makeField(expr, null, null).toString();
-
+            Field field = FieldMaker.makeField(expr, null, null);
+            String orderByName = field.getName();
+            //String orderByName = FieldMaker.makeField(expr, null, null).toString();
             if (sqlSelectOrderByItem.getType() == null) {
                 sqlSelectOrderByItem.setType(SQLOrderingSpecification.ASC);
             }
@@ -510,8 +523,16 @@ public class SqlParser {
 
             orderByName = orderByName.replace("`", "");
             if(alias!=null) orderByName = orderByName.replaceFirst(alias+"\\.","");
-            select.addOrderBy(orderByName, type);
-
+            if (field.isNested()) {
+                String path = field.getNestedPath();
+                String mode = field.getMode();
+                String sortName = field.getSortName();
+                Where condition = null;
+                select.addOrderBy(true, mode, path, condition, sortName, type);
+            } else {
+                select.addOrderBy(orderByName, type);
+            }
+            //select.addOrderBy(orderByName, type);
         }
     }
 

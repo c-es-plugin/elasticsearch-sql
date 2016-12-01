@@ -16,6 +16,32 @@ public class Field implements Cloneable{
     private NestedType nested;
     private ChildrenType children;
 
+    private Where where;
+    private String mode;
+    private String sortName;
+    public Where getWhere() {
+        return where;
+    }
+
+    public void setWhere(Where where) {
+        this.where = where;
+    }
+    public String getMode() {
+        return mode;
+    }
+
+    public void setMode(String mode) {
+        this.mode = mode;
+    }
+
+    public String getSortName() {
+        return sortName;
+    }
+
+    public void setSortName(String sortName) {
+        this.sortName = sortName;
+    }
+
 	public Field(String name, String alias) {
 		this.name = name;
 		this.alias = alias;

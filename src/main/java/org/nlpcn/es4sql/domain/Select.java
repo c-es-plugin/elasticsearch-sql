@@ -3,7 +3,6 @@ package org.nlpcn.es4sql.domain;
 import org.nlpcn.es4sql.domain.hints.Hint;
 import org.nlpcn.es4sql.parse.SubQueryExpression;
 
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -78,7 +77,14 @@ public class Select extends Query {
 		}
 		this.orderBys.add(new Order(name, type));
 	}
-
+	//TODO new add
+	public void addOrderBy(boolean isNested, String mode, String path,
+                           Where condition, String name, String type) {
+		if ("_score".equals(name)) {
+			isQuery = true;
+		}
+		this.orderBys.add(new Order(isNested, mode, path, condition, name, type));
+	}
 
 	public void addField(Field field) {
 		if (field == null ) {
@@ -88,7 +94,7 @@ public class Select extends Query {
             this.selectAll = true;
         }
 
-		if(field instanceof  MethodField && aggsFunctions.contains(field.getName().toUpperCase())) {
+		if(field instanceof MethodField && aggsFunctions.contains(field.getName().toUpperCase())) {
 			isAgg = true;
 		}
 
