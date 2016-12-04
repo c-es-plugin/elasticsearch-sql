@@ -527,7 +527,7 @@ public class SqlParser {
                 String path = field.getNestedPath();
                 String mode = field.getMode();
                 String sortName = field.getSortName();
-                Where condition = null;
+                Where condition = field.getWhere();
                 select.addOrderBy(true, mode, path, condition, sortName, type);
             } else {
                 select.addOrderBy(orderByName, type);

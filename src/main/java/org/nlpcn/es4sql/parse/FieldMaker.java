@@ -91,6 +91,11 @@ public class FieldMaker {
         Field field = handleIdentifier(new SQLIdentifierExpr(nestedType.field), alias, tableAlias);
         field.setNested(nestedType);
         field.setChildren(null);
+        if (nestedType.mode != null) {
+            field.setWhere(nestedType.where);
+            field.setMode(nestedType.mode);
+            field.setSortName(nestedType.field);
+        }
         return field;
     }
 

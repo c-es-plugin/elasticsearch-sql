@@ -10,12 +10,14 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.nlpcn.es4sql.domain.*;
 import org.nlpcn.es4sql.domain.hints.Hint;
 import org.nlpcn.es4sql.domain.hints.HintType;
 import org.nlpcn.es4sql.exception.SqlParseException;
 import org.nlpcn.es4sql.query.maker.QueryMaker;
+import org.nlpcn.es4sql.query.maker.SortMaker;
 
 /**
  * Transform SQL query to standard Elasticsearch search query
@@ -149,8 +151,15 @@ public class DefaultQueryAction extends QueryAction {
 	 *            list of Order object
 	 */
 	private void setSorts(List<Order> orderBys) {
+		//TODO 需要修改
 		for (Order order : orderBys) {
-			request.addSort(order.getName(), SortOrder.valueOf(order.getType()));
+			boolean isNested = order.isNested();
+			if (isNested) {
+				SortBuilder sort = SortMaker.explan(order);
+				request.addSort(sort);
+			} else {
+				request.addSort(order.getName(), SortOrder.valueOf(order.getType()));
+			}
 		}
 	}
 
