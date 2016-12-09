@@ -22,9 +22,9 @@ import java.util.Map;
 
 /**
  * es sql support
- * 
+ *
  * @author ansj
- * 
+ *
  */
 public class SqlParser {
 
@@ -221,19 +221,19 @@ public class SqlParser {
             NestedType nestedType = new NestedType();
             if(nestedType.tryFillFromExpr(between.getTestExpr())){
                 leftSide = nestedType.field;
-                
+
                 isNested = true;
             }
 
             ChildrenType childrenType = new ChildrenType();
             if(childrenType.tryFillFromExpr(between.getTestExpr())){
                 leftSide = childrenType.field;
-                
+
                 isChildren = true;
             }
 
             Condition condition = null;
-            		
+
             if(isNested)
             	condition = new Condition(CONN.valueOf(opear), leftSide, between.isNot() ? "NOT BETWEEN" : "BETWEEN", new Object[]{parseValue(between.beginExpr), parseValue(between.endExpr)}, nestedType);
             else if(isChildren)
@@ -251,21 +251,21 @@ public class SqlParser {
             String methodName = methodExpr.getMethodName();
             if(SpatialParamsFactory.isAllowedMethod(methodName)){
                 String fieldName = methodParameters.get(0).toString();
-                
+
                 boolean isNested = false;
                 boolean isChildren = false;
 
                 NestedType nestedType = new NestedType();
                 if (nestedType.tryFillFromExpr(methodParameters.get(0))) {
                     fieldName = nestedType.field;
-                    
+
                     isNested = true;
                 }
 
                 ChildrenType childrenType = new ChildrenType();
                 if (childrenType.tryFillFromExpr(methodParameters.get(0))) {
                     fieldName = childrenType.field;
-                    
+
                     isChildren = true;
                 }
 
@@ -317,12 +317,12 @@ public class SqlParser {
             }
         } else if (expr instanceof SQLInSubQueryExpr){
             SQLInSubQueryExpr sqlIn = (SQLInSubQueryExpr) expr;
-            
+
             Select innerSelect = parseSelect((MySqlSelectQueryBlock) sqlIn.getSubQuery().getQuery());
-            
+
             if(innerSelect.getFields() == null || innerSelect.getFields().size()!=1)
                 throw new SqlParseException("should only have one return field in subQuery");
-            
+
             SubQueryExpression subQueryExpression = new SubQueryExpression(innerSelect);
 
             String leftSide = sqlIn.getExpr().toString();
@@ -333,14 +333,14 @@ public class SqlParser {
             NestedType nestedType = new NestedType();
             if(nestedType.tryFillFromExpr(sqlIn.getExpr())){
                 leftSide = nestedType.field;
-                
+
                 isNested = true;
             }
-            
+
             ChildrenType childrenType = new ChildrenType();
             if(childrenType.tryFillFromExpr(sqlIn.getExpr())){
                 leftSide = childrenType.field;
-                
+
                 isChildren = true;
             }
 

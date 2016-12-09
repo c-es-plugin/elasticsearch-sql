@@ -34,7 +34,13 @@ public class SortMaker extends Maker {
         List<Where> conditions = where.getWheres();
         for (Where con : conditions) {
             key = ((Condition) con).getName();
-            val = ((Condition) con).getValue().toString();
+            Object vals = ((Condition) con).getValue();
+            if (vals.getClass().isArray()) {
+                Object[] md = (Object[]) vals;
+                val = md[0].toString();
+            } else {
+                val = vals.toString();
+            }
             queryBuilder = explanSort(queryBuilder,key,val);
         }
 

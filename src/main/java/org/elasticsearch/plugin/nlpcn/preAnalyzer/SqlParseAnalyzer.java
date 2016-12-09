@@ -235,7 +235,7 @@ public class SqlParseAnalyzer {
         return out.toString();
     }
 
-    public static String[] analyzer(String term) {
+    public static String[] analyzer(String term) throws Exception{
         //TODO done
         HttpRequester request = new HttpRequester();
         HttpResponse response = null;
@@ -248,10 +248,10 @@ public class SqlParseAnalyzer {
             String midUrl = "/_cat/analyze?analyzer=query_ansj&text=";
             String preUrl = "http://" + ip + ":" + port + midUrl;
             //String preUrl = "http://192.168.25.11:9688/_cat/analyze?analyzer=query_ansj&text=";
-            System.out.println(preUrl);
+            //System.out.println(preUrl);
             String enTerm = URLEncoder.encode(term, "UTF-8");
             String url = preUrl + enTerm;
-            System.out.println(url);
+            //System.out.println(url);
             response = request.sendGet(url);
             if (response.getCode() == 200) {
                 if (response != null && response.getContent().length() > 10) {
@@ -260,7 +260,7 @@ public class SqlParseAnalyzer {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new Exception("There is an error in the word segmentation");
         }
         return getTerms(sourceTerms).split(",");
     }
