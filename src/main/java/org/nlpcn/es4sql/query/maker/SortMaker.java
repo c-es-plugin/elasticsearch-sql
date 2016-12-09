@@ -10,7 +10,9 @@ import org.nlpcn.es4sql.domain.Condition;
 import org.nlpcn.es4sql.domain.Order;
 import org.nlpcn.es4sql.domain.Where;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by fangbb on 2016-11-22.
@@ -28,22 +30,9 @@ public class SortMaker extends Maker {
         String path = order.getPath();
         String mode = order.getMode() == null ? "sum" : order.getMode();
         String type = order.getType();
-        String key = "";
-        String val = "";
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
         List<Where> conditions = where.getWheres();
-        for (Where con : conditions) {
-            key = ((Condition) con).getName();
-            Object vals = ((Condition) con).getValue();
-            if (vals.getClass().isArray()) {
-                Object[] md = (Object[]) vals;
-                val = md[0].toString();
-            } else {
-                val = vals.toString();
-            }
-            queryBuilder = explanSort(queryBuilder,key,val);
-        }
-
+        setCondition(conditions, queryBuilder);
         SortBuilder sort = SortBuilders
                 .fieldSort(filedName)
                 .setNestedFilter(queryBuilder)
@@ -54,7 +43,29 @@ public class SortMaker extends Maker {
         return sort;
     }
 
-    public static BoolQueryBuilder explanSort(BoolQueryBuilder queryBuilder, String key, String value){
+    public static void setCondition(List<Where> conditions, BoolQueryBuilder queryBuilder) {
+        String key = "";
+        String val = "";
+        for (Where con : conditions) {
+            if (con instanceof Condition) {
+                key = ((Condition) con).getName();
+                Object vals = ((Condition) con).getValue();
+                if (vals.getClass().isArray()) {
+                    Object[] md = (Object[]) vals;
+                    val = md[0].toString();
+                } else {
+                    val = vals.toString();
+                }
+                queryBuilder = explanSort(queryBuilder, key, val);
+            } else if (con instanceof Where) {
+                List<Where> conWhere = con.getWheres();
+                setCondition(conWhere, queryBuilder);
+            }
+
+        }
+    }
+
+    public static BoolQueryBuilder explanSort(BoolQueryBuilder queryBuilder, String key, String value) {
         QueryBuilder termQueryBuilder = QueryBuilders.termQuery(key, value);
         queryBuilder = queryBuilder.should(termQueryBuilder);
         return queryBuilder;
