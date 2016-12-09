@@ -57,4 +57,8 @@ public abstract class Query {
 
 		return list.toArray(new String[list.size()]);
 	}
+//	public boolean replaceWhere(Where where){
+//		this.where = where;
+//		return true;
+//	}
 }

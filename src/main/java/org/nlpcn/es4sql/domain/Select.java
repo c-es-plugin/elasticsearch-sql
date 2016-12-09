@@ -151,5 +151,10 @@ public class Select extends Query {
     public boolean isSelectAll() {
         return selectAll;
     }
+
+//    public boolean replaceOrderBys(List<Order> orderBys){
+//		this.orderBys = orderBys;
+//		return true;
+//	}
 }
 

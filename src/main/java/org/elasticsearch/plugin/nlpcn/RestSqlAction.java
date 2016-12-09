@@ -5,10 +5,12 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugin.nlpcn.executors.ActionRequestRestExecuterFactory;
 import org.elasticsearch.plugin.nlpcn.executors.RestExecutor;
+import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlAnalyzer;
+import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlParseAnalyzer;
+import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlSegment;
 import org.elasticsearch.rest.*;
 import org.nlpcn.es4sql.SearchDao;
 import org.nlpcn.es4sql.query.QueryAction;
-import org.nlpcn.es4sql.query.SqlElasticRequestBuilder;
 
 import java.util.Map;
 
@@ -22,6 +24,7 @@ public class RestSqlAction extends BaseRestHandler {
 		restController.registerHandler(RestRequest.Method.GET, "/_sql/_explain", this);
 		restController.registerHandler(RestRequest.Method.POST, "/_sql", this);
 		restController.registerHandler(RestRequest.Method.GET, "/_sql", this);
+		restController.registerHandler(RestRequest.Method.GET, "/_sql/_seg", this);
 	}
 
 	@Override
@@ -31,11 +34,17 @@ public class RestSqlAction extends BaseRestHandler {
 		if (sql == null) {
 			sql = request.content().toUtf8();
 		}
+		//ananlyze
+		//sql = SqlAnalyzer.seg(sql);
+		sql = SqlParseAnalyzer.seg(sql);
 		SearchDao searchDao = new SearchDao(client);
         QueryAction queryAction= searchDao.explain(sql);
 
 		// TODO add unittests to explain. (rest level?)
-		if (request.path().endsWith("/_explain")) {
+		if(request.path().endsWith("_seg")){
+			BytesRestResponse bytesRestResponse = new BytesRestResponse(RestStatus.OK, sql);
+			channel.sendResponse(bytesRestResponse);
+		} else if (request.path().endsWith("/_explain")) {
 			String jsonExplanation = queryAction.explain().explain();
 			BytesRestResponse bytesRestResponse = new BytesRestResponse(RestStatus.OK, jsonExplanation);
 			channel.sendResponse(bytesRestResponse);
