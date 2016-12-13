@@ -27,6 +27,7 @@ public class Order {
 		this.name = name;
 		this.type = type;
 	}
+
 	public String getName() {
 		return name;
 	}

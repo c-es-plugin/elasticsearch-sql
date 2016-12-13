@@ -77,6 +77,7 @@ public class Select extends Query {
 		}
 		this.orderBys.add(new Order(name, type));
 	}
+
 	//TODO new add
 	public void addOrderBy(boolean isNested, String mode, String path,
                            Where condition, String name, String type) {

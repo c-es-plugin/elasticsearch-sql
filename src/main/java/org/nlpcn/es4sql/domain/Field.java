@@ -19,6 +19,7 @@ public class Field implements Cloneable{
     private Where where;
     private String mode;
     private String sortName;
+
     public Where getWhere() {
         return where;
     }

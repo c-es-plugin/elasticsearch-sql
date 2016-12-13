@@ -5,6 +5,7 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugin.nlpcn.executors.ActionRequestRestExecuterFactory;
 import org.elasticsearch.plugin.nlpcn.executors.RestExecutor;
+import org.elasticsearch.plugin.nlpcn.preAnalyzer.AnsjAnalyzer;
 import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlAnalyzer;
 import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlParseAnalyzer;
 import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlSegment;
@@ -36,7 +37,8 @@ public class RestSqlAction extends BaseRestHandler {
 		}
 		//ananlyze
 		//sql = SqlAnalyzer.seg(sql);
-		sql = SqlParseAnalyzer.seg(sql);
+		SqlParseAnalyzer sqlParseAnalyzer = new SqlParseAnalyzer(new AnsjAnalyzer());
+		sql = sqlParseAnalyzer.seg(sql);
 		SearchDao searchDao = new SearchDao(client);
         QueryAction queryAction= searchDao.explain(sql);
 

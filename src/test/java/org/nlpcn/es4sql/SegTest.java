@@ -11,6 +11,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+import org.elasticsearch.plugin.nlpcn.preAnalyzer.AnsjAnalyzer;
 import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlAnalyzer;
 import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlParseAnalyzer;
 import org.nlpcn.es4sql.parse.ElasticLexer;
@@ -22,27 +23,33 @@ import java.util.List;
 /**
  * Created by fangbb on 2016-12-4.
  */
-public class Test {
+public class SegTest {
     @Test
     public void StrTest() {
         //String sql = "select * from test where  nested(info,info.name =  term(seg(\"大数据云计算\")) and info.name=seg(\"python|Hbase|Hive\") or info.name=term(seg(\"Hadoop\"))) and city=seg(\"hah\") and province=\"河北省\" order by nested(info,sum(info.age), info.name=seg(\"java\") and info.name=terms(seg(\"python\")) and info.name=seg(\"Hadoop\")) desc,score desc";
         String sql = "select * from a where name=seg(\"大数据云计算\") and age > 18 order by age desc";
         //System.out.println(sql);
         //sql = SqlSegment.seg(sql);
-        sql = SqlParseAnalyzer.seg(sql);
+        try {
+            SqlParseAnalyzer sqlParseAnalyzer = new SqlParseAnalyzer(new AnsjAnalyzer());
+            sql = sqlParseAnalyzer.seg(sql);
+        } catch (Exception e) {
+            System.out.print(e);
+        }
+
         //sql = SqlAnalyzer.seg(sql);
         System.out.println("-------------");
         System.out.println(sql);
         System.out.println("-------------");
     }
 
-    @org.junit.Test
+    @Test
     public void Str() throws Exception {
         String ip = InetAddress.getLocalHost().getHostAddress();
         System.out.println(ip);
     }
 
-    @org.junit.Test
+    @Test
     public void SqlExprParser() {
         try {
             String sql = "select * from a where name=seg(\"大数据云计算\") and age > 18 order by age desc";
@@ -59,7 +66,7 @@ public class Test {
 
     }
 
-    @org.junit.Test
+    @Test
     public void StatementParser() {
         String sql = "select * from a where name=seg(\"大数据云计算\") and age > 18 order by age desc";
         ElasticLexer lexer = new ElasticLexer(sql);
@@ -75,7 +82,7 @@ public class Test {
         System.out.println(out.toString());
     }
 
-    @org.junit.Test
+    @Test
     public void myStatementParser() {
         String sql = "select * from a-b where name=seg(\"大数据云计算\") and age > 18 order by age desc";
         ElasticLexer lexer = new ElasticLexer(sql);

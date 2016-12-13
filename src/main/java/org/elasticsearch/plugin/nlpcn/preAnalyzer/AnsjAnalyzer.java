@@ -8,9 +8,9 @@ import java.net.URLEncoder;
 /**
  * Created by fangbb on 2016-12-12.
  */
-public class Analyzer {
+public class AnsjAnalyzer extends Analyzer {
 
-    public static String[] analyzer(String term) throws Exception {
+    public String[] analyzer(String term) throws Exception {
         //TODO done
         HttpRequester request = new HttpRequester();
         HttpResponse response = null;
