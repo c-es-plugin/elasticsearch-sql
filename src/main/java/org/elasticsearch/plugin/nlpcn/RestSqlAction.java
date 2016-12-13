@@ -8,7 +8,6 @@ import org.elasticsearch.plugin.nlpcn.executors.RestExecutor;
 import org.elasticsearch.plugin.nlpcn.preAnalyzer.AnsjAnalyzer;
 import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlAnalyzer;
 import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlParseAnalyzer;
-import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlSegment;
 import org.elasticsearch.rest.*;
 import org.nlpcn.es4sql.SearchDao;
 import org.nlpcn.es4sql.query.QueryAction;

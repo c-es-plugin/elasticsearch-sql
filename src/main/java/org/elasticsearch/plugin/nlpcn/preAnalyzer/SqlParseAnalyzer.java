@@ -13,6 +13,7 @@ import com.alibaba.druid.util.JdbcConstants;
 import org.nlpcn.es4sql.parse.ElasticLexer;
 import org.nlpcn.es4sql.parse.ElasticSqlExprParser;
 
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,10 +69,8 @@ public class SqlParseAnalyzer {
             if (sqlExpr instanceof SQLMethodInvokeExpr) {
                 String nested = ((SQLMethodInvokeExpr) sqlExpr).getMethodName();
                 List<SQLExpr> params = ((SQLMethodInvokeExpr) sqlExpr).getParameters();
-                SQLBinaryOpExpr condition;
                 if (nested.equals("nested") && params.size() == 3) {
-                    parseWhere((SQLBinaryOpExpr) params.get(2));
-                    //params.add(2, condition);
+                    parseWhere(params.get(2));
                 } else {
                     new Exception("Nested sorting must be 3 parameters");
                 }
@@ -94,8 +93,10 @@ public class SqlParseAnalyzer {
                 preTraverse(right);
             }
         } else if (isNested(sqlExpr)) {
-            //nested 嵌套页节点
+            //nested 嵌套叶节点
             replaceNestedLeafNode(sqlExpr);
+        } else {
+            throw new SQLFeatureNotSupportedException();
         }
     }
 
@@ -109,13 +110,9 @@ public class SqlParseAnalyzer {
             ((MySqlSelectQueryBlock) sqlObject).setWhere(newExpr);
         } else if (sqlObject instanceof SQLBinaryOpExpr) {
             if (sqlExpr.equals(((SQLBinaryOpExpr) sqlObject).getRight())) {
-                //TODO
                 ((SQLBinaryOpExpr) sqlObject).setRight(newExpr);
-                System.out.println("============right");
             } else {
-                //TODO
                 ((SQLBinaryOpExpr) sqlObject).setLeft(newExpr);
-                System.out.println("============left");
             }
         }
     }
@@ -138,7 +135,7 @@ public class SqlParseAnalyzer {
                         retExpr = tmp;
                     }
                 }
-            }else if (where instanceof SQLBinaryOpExpr) {
+            } else if (where instanceof SQLBinaryOpExpr) {
                 retExpr = where;
             }
 
@@ -270,6 +267,12 @@ public class SqlParseAnalyzer {
                     }
                 }
                 conNestedTree(binaryOpExpr, allNewNode);
+            } else {
+                List<SQLExpr> allNewNode = new ArrayList<SQLExpr>();
+                SQLBinaryOpExpr opNode = createOpNode(filed, right, operator);
+                SQLMethodInvokeExpr nestedNode = createNestedNode(methodName, pathName, opNode);
+                allNewNode.add(nestedNode);
+                conNestedTree(binaryOpExpr, allNewNode);
             }
         } else {
             List<SQLExpr> allNewNode = new ArrayList<SQLExpr>();
@@ -286,13 +289,9 @@ public class SqlParseAnalyzer {
             ((MySqlSelectQueryBlock) sqlObject).setWhere(newExpr);
         } else if (sqlObject instanceof SQLBinaryOpExpr) {
             if (sqlExpr.equals(((SQLBinaryOpExpr) sqlObject).getRight())) {
-                //TODO
                 ((SQLBinaryOpExpr) sqlObject).setRight(newExpr);
-                System.out.println("============right");
             } else {
-                //TODO
                 ((SQLBinaryOpExpr) sqlObject).setLeft(newExpr);
-                System.out.println("============left");
             }
         } else if (sqlObject instanceof SQLMethodInvokeExpr) {
             ((SQLMethodInvokeExpr) sqlObject).addParameter(newExpr);
@@ -305,7 +304,7 @@ public class SqlParseAnalyzer {
         int andNum = size - 1;
         List<SQLExpr> allNode = new ArrayList<SQLExpr>();
         if (andNum == 0) {
-            replaceOldNode(retExpr,sqlExprs.get(0));
+            replaceOldNode(retExpr, sqlExprs.get(0));
         } else {
             for (int i = 0; i < andNum; i++) {
                 if (i == 0) {
