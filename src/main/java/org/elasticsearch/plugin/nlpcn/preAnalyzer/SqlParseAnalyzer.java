@@ -281,13 +281,9 @@ public class SqlParseAnalyzer {
             ((MySqlSelectQueryBlock) sqlObject).setWhere(newExpr);
         } else if (sqlObject instanceof SQLBinaryOpExpr) {
             if (sqlExpr.equals(((SQLBinaryOpExpr) sqlObject).getRight())) {
-                //TODO
                 ((SQLBinaryOpExpr) sqlObject).setRight(newExpr);
-                System.out.println("============right");
             } else {
-                //TODO
                 ((SQLBinaryOpExpr) sqlObject).setLeft(newExpr);
-                System.out.println("============left");
             }
         } else if (sqlObject instanceof SQLMethodInvokeExpr) {
             ((SQLMethodInvokeExpr) sqlObject).addParameter(newExpr);
