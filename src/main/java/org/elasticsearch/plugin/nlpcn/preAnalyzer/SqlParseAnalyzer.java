@@ -1,6 +1,7 @@
 package org.elasticsearch.plugin.nlpcn.preAnalyzer;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
@@ -9,12 +10,9 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.util.JdbcConstants;
-import org.elasticsearch.plugin.nlpcn.request.HttpRequester;
-import org.elasticsearch.plugin.nlpcn.request.HttpResponse;
 import org.nlpcn.es4sql.parse.ElasticLexer;
 import org.nlpcn.es4sql.parse.ElasticSqlExprParser;
 
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,29 +80,106 @@ public class SqlParseAnalyzer {
             SQLBinaryOpExpr sqlBinaryOpExpr = (SQLBinaryOpExpr) sqlExpr;
             SQLExpr left = sqlBinaryOpExpr.getLeft();
             SQLExpr right = sqlBinaryOpExpr.getRight();
-            if (isLeaf(left) && isLeaf(right)) {
-                //TODO
+            SQLBinaryOperator sqlBinaryOperator = sqlBinaryOpExpr.getOperator();
+            if (isLeaf(sqlBinaryOperator)) {
+                // 普通叶节点替换
                 replaceLeafNode(sqlBinaryOpExpr);
-                return;
             } else {
                 preTraverse(left);
                 preTraverse(right);
             }
-        } else if (sqlExpr instanceof SQLMethodInvokeExpr) {
-            String nested = ((SQLMethodInvokeExpr) sqlExpr).getMethodName();
-            List<SQLExpr> params = ((SQLMethodInvokeExpr) sqlExpr).getParameters();
-            SQLBinaryOpExpr condition;
-            if (nested.equals("nested") && params.size() == 2) {
-                parseWhere((SQLBinaryOpExpr) params.get(1));
+        } else if (isNested(sqlExpr)) {
+            //nested 嵌套页节点
+            replaceNestedLeafNode(sqlExpr);
+        }
+    }
+
+    //TODO 对Nested叶节点拆分
+    //TODO 分词
+    //TODO 构造新节点
+    private static void replaceNestedLeafNode(SQLExpr sqlExpr) throws Exception {
+        SQLObject sqlObject = sqlExpr.getParent();
+        SQLExpr newExpr = parseNested(sqlExpr);
+        if (sqlObject instanceof MySqlSelectQueryBlock) {
+            ((MySqlSelectQueryBlock) sqlObject).setWhere(newExpr);
+        } else if (sqlObject instanceof SQLBinaryOpExpr) {
+            if (sqlExpr.equals(((SQLBinaryOpExpr) sqlObject).getRight())) {
+                //TODO
+                ((SQLBinaryOpExpr) sqlObject).setRight(newExpr);
+                System.out.println("============right");
             } else {
-                new Exception("Nested where must be 2 parameters");
+                //TODO
+                ((SQLBinaryOpExpr) sqlObject).setLeft(newExpr);
+                System.out.println("============left");
             }
         }
     }
 
+    //TODO 解析nested的叶节点，返回新构造的叶节点
+    private static SQLExpr parseNested(SQLExpr sqlExpr) throws Exception {
+        String methodName = ((SQLMethodInvokeExpr) sqlExpr).getMethodName();
+        SQLExpr pathName = ((SQLMethodInvokeExpr) sqlExpr).getParameters().get(0);
+        SQLExpr where = ((SQLMethodInvokeExpr) sqlExpr).getParameters().get(1);
+        SQLExpr retExpr = null;
+        if (where != null) {
+            preTraverseNested(methodName, pathName, where);
+            if (isLeaf(where)) {
+                SQLObject parent = where.getParent();
+                if (parent instanceof SQLMethodInvokeExpr) {
+                    SQLMethodInvokeExpr tmp = ((SQLMethodInvokeExpr) parent);
+                    if (tmp.getParameters().size() == 3) {
+                        retExpr = tmp.getParameters().get(2);
+                    } else {
+                        retExpr = tmp;
+                    }
+                }
+            }else if (where instanceof SQLBinaryOpExpr) {
+                retExpr = where;
+            }
+
+        }
+        return retExpr;
+    }
+
+    private static void preTraverseNested(String methodName, SQLExpr pathName, SQLExpr sqlExpr) throws Exception {
+        if (sqlExpr instanceof SQLBinaryOpExpr) {
+            SQLBinaryOpExpr sqlBinaryOpExpr = (SQLBinaryOpExpr) sqlExpr;
+            SQLExpr left = sqlBinaryOpExpr.getLeft();
+            SQLExpr right = sqlBinaryOpExpr.getRight();
+            SQLBinaryOperator sqlBinaryOperator = sqlBinaryOpExpr.getOperator();
+            //left和right都是a=b这种形式
+            if (isLeaf(sqlBinaryOperator)) {
+                generateNestedLeafNode(methodName, pathName, sqlBinaryOpExpr);
+            } else {
+                preTraverseNested(methodName, pathName, left);
+                preTraverseNested(methodName, pathName, right);
+            }
+        }
+    }
+
+    private static boolean isNested(SQLExpr sqlExpr) {
+        if (sqlExpr instanceof SQLMethodInvokeExpr) {
+            String mName = ((SQLMethodInvokeExpr) sqlExpr).getMethodName();
+            if (mName.equals("nested")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isLeaf(SQLBinaryOperator sqlBinaryOperator) {
+        if (sqlBinaryOperator.equals(SQLBinaryOperator.BooleanOr) || sqlBinaryOperator.equals(SQLBinaryOperator.BooleanAnd)) {
+            return false;
+        }
+        return true;
+    }
+
     private static boolean isLeaf(SQLExpr sqlExpr) {
         if (sqlExpr instanceof SQLBinaryOpExpr) {
-            return false;
+            SQLBinaryOperator sqlBinaryOperator = ((SQLBinaryOpExpr) sqlExpr).getOperator();
+            if (sqlBinaryOperator.equals(SQLBinaryOperator.BooleanOr) || sqlBinaryOperator.equals(SQLBinaryOperator.BooleanAnd)) {
+                return false;
+            }
         }
         return true;
     }
@@ -148,12 +223,102 @@ public class SqlParseAnalyzer {
         return false;
     }
 
-    private static  void removeSegFun(SQLBinaryOpExpr binaryOpExpr,SQLExpr right,Method method){
+    private static void removeSegFun(SQLBinaryOpExpr binaryOpExpr, SQLExpr right, Method method) {
         //当seg内没有引号时，去掉seg()
         if (segNoQuota((SQLMethodInvokeExpr) right) && method.containSeg()) {
             method.setParentMethod(null);
             List<SQLExpr> params = ((SQLMethodInvokeExpr) right).getParameters();
             binaryOpExpr.setRight(params.get(0));
+        }
+    }
+
+    private static void generateNestedLeafNode(String methodName, SQLExpr pathName, SQLBinaryOpExpr binaryOpExpr) throws Exception {
+        //right:a.b = "d"
+        SQLExpr left = binaryOpExpr.getLeft();
+        SQLExpr right = binaryOpExpr.getRight();
+        SQLBinaryOperator operator = binaryOpExpr.getOperator();
+        String filed = ((SQLIdentifierExpr) left).getName();
+        if (right instanceof SQLMethodInvokeExpr) {
+            Method method = parseMethod(right);
+            String sourceTerm = method.getParams();
+            removeSegFun(binaryOpExpr, right, method);
+            //seg(term("abc")) exception
+            if (method.containSeg() && sourceTerm != null) {
+                String[] terms = Analyzer.analyzer(sourceTerm);
+                //String[] terms = "a,b".split(",");
+                String funName = method.getFunName();
+                List<SQLExpr> allNewNode = new ArrayList<SQLExpr>();
+                for (String term : terms) {
+                    if (!funName.equals("")) {
+                        SQLMethodInvokeExpr methodInvokeExpr = new SQLMethodInvokeExpr();
+                        methodInvokeExpr.setMethodName(funName);
+                        methodInvokeExpr.addParameter(new SQLCharExpr(term));
+                        SQLBinaryOpExpr opNode = createOpNode(filed, methodInvokeExpr, operator);
+                        SQLMethodInvokeExpr nestedNode = createNestedNode(methodName, pathName, opNode);
+                        allNewNode.add(nestedNode);
+                    } else {
+                        SQLCharExpr charExpr = new SQLCharExpr();
+                        charExpr.setText(term);
+                        SQLBinaryOpExpr opNode = createOpNode(filed, charExpr, operator);
+                        SQLMethodInvokeExpr nestedNode = createNestedNode(methodName, pathName, opNode);
+                        allNewNode.add(nestedNode);
+                    }
+                }
+                conNestedTree(binaryOpExpr, allNewNode);
+            }
+        } else {
+            List<SQLExpr> allNewNode = new ArrayList<SQLExpr>();
+            SQLBinaryOpExpr opNode = createOpNode(filed, right, operator);
+            SQLMethodInvokeExpr nestedNode = createNestedNode(methodName, pathName, opNode);
+            allNewNode.add(nestedNode);
+            conNestedTree(binaryOpExpr, allNewNode);
+        }
+    }
+
+    private static void replaceOldNode(SQLExpr sqlExpr,SQLExpr newExpr) throws Exception {
+        SQLObject sqlObject = sqlExpr.getParent();
+        if (sqlObject instanceof MySqlSelectQueryBlock) {
+            ((MySqlSelectQueryBlock) sqlObject).setWhere(newExpr);
+        } else if (sqlObject instanceof SQLBinaryOpExpr) {
+            if (sqlExpr.equals(((SQLBinaryOpExpr) sqlObject).getRight())) {
+                //TODO
+                ((SQLBinaryOpExpr) sqlObject).setRight(newExpr);
+                System.out.println("============right");
+            } else {
+                //TODO
+                ((SQLBinaryOpExpr) sqlObject).setLeft(newExpr);
+                System.out.println("============left");
+            }
+        } else if (sqlObject instanceof SQLMethodInvokeExpr) {
+            ((SQLMethodInvokeExpr) sqlObject).addParameter(newExpr);
+        }
+    }
+
+    //构造新的二叉树替换原有节点
+    private static void conNestedTree(SQLBinaryOpExpr retExpr, List<SQLExpr> sqlExprs) throws Exception{
+        int size = sqlExprs.size();
+        int andNum = size - 1;
+        List<SQLExpr> allNode = new ArrayList<SQLExpr>();
+        if (andNum == 0) {
+            replaceOldNode(retExpr,sqlExprs.get(0));
+        } else {
+            for (int i = 0; i < andNum; i++) {
+                if (i == 0) {
+                    retExpr.setOperator(SQLBinaryOperator.BooleanAnd);
+                    //retExpr做为顶点
+                    allNode.add(retExpr);
+                } else {
+                    allNode.add(createOpNode(null, null, SQLBinaryOperator.BooleanAnd));
+                }
+            }
+            allNode.addAll(sqlExprs);
+            //共有n-1个And，n个node，每一个节点从0开始进行编号，那么第i个节点的左孩子的编号为2*i+1，右孩子为2*i+2。
+            for (int parentIndex = 0; parentIndex < andNum; parentIndex++) {
+                if (allNode.get(parentIndex) instanceof SQLBinaryOpExpr) {
+                    ((SQLBinaryOpExpr) allNode.get(parentIndex)).setLeft(allNode.get(parentIndex * 2 + 1));
+                    ((SQLBinaryOpExpr) allNode.get(parentIndex)).setRight(allNode.get(parentIndex * 2 + 2));
+                }
+            }
         }
     }
 
@@ -166,10 +331,10 @@ public class SqlParseAnalyzer {
         if (right instanceof SQLMethodInvokeExpr) {
             Method method = parseMethod(right);
             String sourceTerm = method.getParams();
-            removeSegFun(binaryOpExpr,right,method);
+            removeSegFun(binaryOpExpr, right, method);
             //seg(term("abc")) exception
             if (method.containSeg() && sourceTerm != null) {
-                String[] terms = analyzer(sourceTerm);
+                String[] terms = Analyzer.analyzer(sourceTerm);
                 //String[] terms = "a,b".split(",");
                 String funName = method.getFunName();
                 List<SQLBinaryOpExpr> allNewNode = new ArrayList<SQLBinaryOpExpr>();
@@ -178,11 +343,11 @@ public class SqlParseAnalyzer {
                         SQLMethodInvokeExpr methodInvokeExpr = new SQLMethodInvokeExpr();
                         methodInvokeExpr.setMethodName(funName);
                         methodInvokeExpr.addParameter(new SQLCharExpr(term));
-                        allNewNode.add(createNode(filed, methodInvokeExpr, operator));
+                        allNewNode.add(createOpNode(filed, methodInvokeExpr, operator));
                     } else {
                         SQLCharExpr charExpr = new SQLCharExpr();
                         charExpr.setText(term);
-                        allNewNode.add(createNode(filed, charExpr, operator));
+                        allNewNode.add(createOpNode(filed, charExpr, operator));
                     }
 
                 }
@@ -198,13 +363,14 @@ public class SqlParseAnalyzer {
         List<SQLBinaryOpExpr> allNode = new ArrayList<SQLBinaryOpExpr>();
         if (andNum == 0) {
             retExpr.setRight(SQLBinaryOpNode.get(0).getRight());
-        }else {
+        } else {
             for (int i = 0; i < andNum; i++) {
                 if (i == 0) {
                     retExpr.setOperator(SQLBinaryOperator.BooleanAnd);
+                    //retExpr做为顶点
                     allNode.add(retExpr);
                 } else {
-                    allNode.add(createNode(null, null, SQLBinaryOperator.BooleanAnd));
+                    allNode.add(createOpNode(null, null, SQLBinaryOperator.BooleanAnd));
                 }
             }
             allNode.addAll(SQLBinaryOpNode);
@@ -218,7 +384,7 @@ public class SqlParseAnalyzer {
 
 
     //TODO 构造一个节点
-    private static SQLBinaryOpExpr createNode(String filed, SQLExpr value, SQLBinaryOperator operator) {
+    private static SQLBinaryOpExpr createOpNode(String filed, SQLExpr value, SQLBinaryOperator operator) {
         SQLBinaryOpExpr retWhere = new SQLBinaryOpExpr();
         SQLIdentifierExpr ileft = new SQLIdentifierExpr();
         ileft.setName(filed);
@@ -228,59 +394,20 @@ public class SqlParseAnalyzer {
         return retWhere;
     }
 
+    //TODO 构造一个nested节点
+    private static SQLMethodInvokeExpr createNestedNode(String name, SQLExpr pathName, SQLBinaryOpExpr sqlBinaryOpExpr) {
+        SQLMethodInvokeExpr sqlMethodInvokeExpr = new SQLMethodInvokeExpr();
+        sqlMethodInvokeExpr.setMethodName(name);
+        sqlMethodInvokeExpr.addParameter(pathName);
+        sqlMethodInvokeExpr.addParameter(sqlBinaryOpExpr);
+        return sqlMethodInvokeExpr;
+    }
+
     private static String printSql(MySqlSelectQueryBlock query) {
         StringBuilder out = new StringBuilder();
         MySqlOutputVisitor visitor = new MySqlOutputVisitor(out);
         query.accept0(visitor);
         return out.toString();
-    }
-
-    public static String[] analyzer(String term) throws Exception{
-        //TODO done
-        HttpRequester request = new HttpRequester();
-        HttpResponse response = null;
-        String sourceTerms = "";
-//        http://192.168.25.11:9688/_cat/analyze?text=大数据&analyzer=query_ansj
-        try {
-            //String ip = InetAddress.getLocalHost().getHostAddress();
-            String ip = AnsjElasticConfigurator.ES_IP;
-            String port = AnsjElasticConfigurator.ES_PORT;
-            String midUrl = "/_cat/analyze?analyzer=query_ansj&text=";
-            String preUrl = "http://" + ip + ":" + port + midUrl;
-            //String preUrl = "http://192.168.25.11:9688/_cat/analyze?analyzer=query_ansj&text=";
-            //System.out.println(preUrl);
-            String enTerm = URLEncoder.encode(term, "UTF-8");
-            String url = preUrl + enTerm;
-            //System.out.println(url);
-            response = request.sendGet(url);
-            if (response.getCode() == 200) {
-                if (response != null && response.getContent().length() > 10) {
-                    sourceTerms = response.getContent();
-                }
-            }
-
-        } catch (Exception e) {
-            throw new Exception("There is an error in the word segmentation");
-        }
-        return getTerms(sourceTerms).split(",");
-    }
-
-    private static String getTerms(String sourceTerms) {
-        StringBuffer sb = new StringBuffer();
-        String[] lines = sourceTerms.split("\n");
-        int lineLen = lines.length;
-        for (int i = 0; i < lineLen; i++) {
-            String[] terms = lines[i].split("\t");
-            String term = terms[0].trim();
-            int size = terms.length;
-            if (i == 0) {
-                //sb.append("\"").append(term).append("\"");
-                sb.append(term);
-            } else {
-                sb.append(",").append(term);
-            }
-        }
-        return sb.toString();
     }
 
 }
