@@ -72,7 +72,7 @@ public class SqlParseAnalyzer {
                 if (nested.equals("nested") && params.size() == 3) {
                     parseWhere(params.get(2));
                 } else {
-                    new Exception("Nested sorting must be 3 parameters");
+                    throw new Exception("Nested sorting must be 3 parameters");
                 }
             }
         }
@@ -120,6 +120,9 @@ public class SqlParseAnalyzer {
     //TODO 解析nested的叶节点，返回新构造的叶节点
     private SQLExpr parseNested(SQLExpr sqlExpr) throws Exception {
         String methodName = ((SQLMethodInvokeExpr) sqlExpr).getMethodName();
+        if (((SQLMethodInvokeExpr) sqlExpr).getParameters().size() != 2) {
+            throw new Exception("Nested query must be 2 parameters");
+        }
         SQLExpr pathName = ((SQLMethodInvokeExpr) sqlExpr).getParameters().get(0);
         SQLExpr where = ((SQLMethodInvokeExpr) sqlExpr).getParameters().get(1);
         SQLExpr retExpr = null;
