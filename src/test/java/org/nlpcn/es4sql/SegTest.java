@@ -1,18 +1,14 @@
 package org.nlpcn.es4sql;
 
-import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
-import org.elasticsearch.plugin.nlpcn.preAnalyzer.AnsjAnalyzer;
-import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlAnalyzer;
+import org.elasticsearch.plugin.nlpcn.preAnalyzer.AnsjAnalyzerImpl;
 import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlParseAnalyzer;
 import org.nlpcn.es4sql.parse.ElasticLexer;
 import org.nlpcn.es4sql.parse.ElasticSqlExprParser;
@@ -29,15 +25,13 @@ public class SegTest {
         //String sql = "select * from test where  nested(info,info.name =  term(seg(\"大数据云计算\")) and info.name=seg(\"python|Hbase|Hive\") or info.name=term(seg(\"Hadoop\"))) and city=seg(\"hah\") and province=\"河北省\" order by nested(info,sum(info.age), info.name=seg(\"java\") and info.name=terms(seg(\"python\")) and info.name=seg(\"Hadoop\")) desc,score desc";
         String sql = "select * from a where name=seg(\"大数据云计算\") and age > 18 order by age desc";
         //System.out.println(sql);
-        //sql = SqlSegment.seg(sql);
         try {
-            SqlParseAnalyzer sqlParseAnalyzer = new SqlParseAnalyzer(new AnsjAnalyzer());
+            SqlParseAnalyzer sqlParseAnalyzer = new SqlParseAnalyzer(new AnsjAnalyzerImpl());
             sql = sqlParseAnalyzer.seg(sql);
         } catch (Exception e) {
             System.out.print(e);
         }
 
-        //sql = SqlAnalyzer.seg(sql);
         System.out.println("-------------");
         System.out.println(sql);
         System.out.println("-------------");

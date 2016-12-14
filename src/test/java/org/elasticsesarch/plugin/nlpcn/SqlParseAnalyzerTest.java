@@ -9,7 +9,7 @@ import static org.junit.Assert.assertEquals;
  * Created by linxueqing on 2016/12/13.
  */
 public class SqlParseAnalyzerTest {
-    public class MockAnalyzer extends Analyzer {
+    public class MockAnalyzer implements Analyzer {
         @Override
         public String[] analyzer(String term) throws Exception {
             return new String[]{"大数据", "持续集成"};

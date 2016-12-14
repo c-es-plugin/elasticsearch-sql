@@ -8,7 +8,7 @@ import java.net.URLEncoder;
 /**
  * Created by fangbb on 2016-12-12.
  */
-public class AnsjAnalyzer extends Analyzer {
+public class AnsjAnalyzerImpl implements Analyzer {
 
     public String[] analyzer(String term) throws Exception {
         //TODO done

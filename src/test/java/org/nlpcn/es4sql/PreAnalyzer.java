@@ -1,7 +1,6 @@
 package org.nlpcn.es4sql;
 
-import org.elasticsearch.plugin.nlpcn.preAnalyzer.Analyzer;
-import org.elasticsearch.plugin.nlpcn.preAnalyzer.AnsjAnalyzer;
+import org.elasticsearch.plugin.nlpcn.preAnalyzer.AnsjAnalyzerImpl;
 import org.elasticsearch.plugin.nlpcn.preAnalyzer.SqlParseAnalyzer;
 import org.junit.Test;
 
@@ -23,7 +22,7 @@ public class PreAnalyzer {
             //String sql = "SELECT * FROM test where nested(a,a.c=\"abc\") order by nested(a,sum(a.b),a.c=term(seg(\"百度和谷歌\")))";
             //String sql = "SELECT * FROM test where nested(a,a.c=term(seg(\"百度和谷歌\"))) ";
 
-            SqlParseAnalyzer sqlParseAnalyzer = new SqlParseAnalyzer(new AnsjAnalyzer());
+            SqlParseAnalyzer sqlParseAnalyzer = new SqlParseAnalyzer(new AnsjAnalyzerImpl());
             String ret = sqlParseAnalyzer.seg(sql);
             System.out.println(ret);
         } catch (Exception e) {

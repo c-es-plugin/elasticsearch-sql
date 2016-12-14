@@ -3,7 +3,7 @@ package org.elasticsearch.plugin.nlpcn;
 
 import org.elasticsearch.common.inject.AbstractModule;
 import org.elasticsearch.common.inject.Module;
-import org.elasticsearch.plugin.nlpcn.preAnalyzer.AnsjAnalyzerPlugin;
+import org.elasticsearch.plugin.nlpcn.preAnalyzer.AnsjAnalyzerAction;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.rest.RestModule;
 
@@ -31,7 +31,7 @@ public class SqlPlug extends Plugin {
 	public static class AnsjModule extends AbstractModule {
 		@Override
 		protected void configure() {
-			bind(AnsjAnalyzerPlugin.class).asEagerSingleton();
+			bind(AnsjAnalyzerAction.class).asEagerSingleton();
 		}
 	}
 
