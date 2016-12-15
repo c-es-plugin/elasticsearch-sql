@@ -16,6 +16,7 @@ import java.net.UnknownHostException;
  * Created by fangbb on 2016-12-12.
  */
 public class NestedSortTest {
+    
     @Test
     public void nestedSort4MatchQueryTest(){
         String sql = "SELECT * FROM test order by nested(a,sum(a.b),a.c=matchQuery(\"百度和谷歌\"))";
@@ -33,7 +34,7 @@ public class NestedSortTest {
                 "          \"should\" : {\n" +
                 "            \"match\" : {\n" +
                 "              \"a.c\" : {\n" +
-                "                \"query\" : \"'百度和谷歌'\",\n" +
+                "                \"query\" : \"百度和谷歌\",\n" +
                 "                \"type\" : \"boolean\"\n" +
                 "              }\n" +
                 "            }\n" +
@@ -156,7 +157,7 @@ public class NestedSortTest {
                 "          \"should\" : [ {\n" +
                 "            \"match\" : {\n" +
                 "              \"info.name\" : {\n" +
-                "                \"query\" : \"'java'\",\n" +
+                "                \"query\" : \"java\",\n" +
                 "                \"type\" : \"boolean\"\n" +
                 "              }\n" +
                 "            }\n" +

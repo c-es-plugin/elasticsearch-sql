@@ -1,6 +1,11 @@
 package org.nlpcn.es4sql.query.maker;
 
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+import com.alibaba.druid.sql.ast.expr.SQLTextLiteralExpr;
+import com.alibaba.druid.sql.visitor.functions.Char;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -59,9 +64,11 @@ public class SortMaker extends Maker {
                         methodName = "term";
                     }
                 } else if (vals instanceof SQLMethodInvokeExpr) {
+                    //matchQuery
                     methodName = ((SQLMethodInvokeExpr) vals).getMethodName();
-                    val = ((SQLMethodInvokeExpr) vals).getParameters().get(0).toString();
+                    val = getValue(((SQLMethodInvokeExpr) vals).getParameters().get(0));
                 } else {
+                    //match_phrase
                     methodName = "";
                     val = vals.toString();
                 }
@@ -73,7 +80,15 @@ public class SortMaker extends Maker {
 
         }
     }
-
+    public static String getValue(SQLExpr sqlExpr){
+        String retStr="";
+        if (sqlExpr instanceof SQLCharExpr) {
+            retStr = ((SQLCharExpr) sqlExpr).getValue().toString();
+        } else if (sqlExpr instanceof SQLIdentifierExpr) {
+            retStr =  ((SQLIdentifierExpr) sqlExpr).getName().toString();
+        }
+        return retStr;
+    }
     public static BoolQueryBuilder explanSort(BoolQueryBuilder queryBuilder, String methodName, String key, String value) {
         if (methodName.equals("")) {
             QueryBuilder termQueryBuilder = QueryBuilders.matchPhraseQuery(key, value);
