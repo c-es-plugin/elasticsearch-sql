@@ -17,86 +17,7 @@ import java.net.UnknownHostException;
  */
 public class NestedSortTest {
     @Test
-    public void nestedSortTest(){
-            String sql = "select * from test where nested(info,info.name=term(\"java\") and info.name=term(\"python\") or info.name=term(\"Hadoop\")) order by nested(info,sum(info.age),info.name=matchQuery(\"java\") and info.name=term(\"python\") and info.name=\"Hadoop\") desc,score desc";
-            String actual = exec(sql);
-            String expected = "{\n" +
-                    "  \"from\" : 0,\n" +
-                    "  \"size\" : 200,\n" +
-                    "  \"query\" : {\n" +
-                    "    \"bool\" : {\n" +
-                    "      \"must\" : {\n" +
-                    "        \"nested\" : {\n" +
-                    "          \"query\" : {\n" +
-                    "            \"bool\" : {\n" +
-                    "              \"must\" : {\n" +
-                    "                \"bool\" : {\n" +
-                    "                  \"should\" : [ {\n" +
-                    "                    \"bool\" : {\n" +
-                    "                      \"must\" : [ {\n" +
-                    "                        \"term\" : {\n" +
-                    "                          \"info.name\" : \"java\"\n" +
-                    "                        }\n" +
-                    "                      }, {\n" +
-                    "                        \"term\" : {\n" +
-                    "                          \"info.name\" : \"python\"\n" +
-                    "                        }\n" +
-                    "                      } ]\n" +
-                    "                    }\n" +
-                    "                  }, {\n" +
-                    "                    \"term\" : {\n" +
-                    "                      \"info.name\" : \"Hadoop\"\n" +
-                    "                    }\n" +
-                    "                  } ]\n" +
-                    "                }\n" +
-                    "              }\n" +
-                    "            }\n" +
-                    "          },\n" +
-                    "          \"path\" : \"info\"\n" +
-                    "        }\n" +
-                    "      }\n" +
-                    "    }\n" +
-                    "  },\n" +
-                    "  \"sort\" : [ {\n" +
-                    "    \"info.age\" : {\n" +
-                    "      \"order\" : \"desc\",\n" +
-                    "      \"missing\" : \"_last\",\n" +
-                    "      \"mode\" : \"SUM\",\n" +
-                    "      \"nested_filter\" : {\n" +
-                    "        \"bool\" : {\n" +
-                    "          \"should\" : [ {\n" +
-                    "            \"match\" : {\n" +
-                    "              \"info.name\" : {\n" +
-                    "                \"query\" : \"'java'\",\n" +
-                    "                \"type\" : \"boolean\"\n" +
-                    "              }\n" +
-                    "            }\n" +
-                    "          }, {\n" +
-                    "            \"term\" : {\n" +
-                    "              \"info.name\" : \"python\"\n" +
-                    "            }\n" +
-                    "          }, {\n" +
-                    "            \"match\" : {\n" +
-                    "              \"info.name\" : {\n" +
-                    "                \"query\" : \"Hadoop\",\n" +
-                    "                \"type\" : \"phrase\"\n" +
-                    "              }\n" +
-                    "            }\n" +
-                    "          } ]\n" +
-                    "        }\n" +
-                    "      },\n" +
-                    "      \"nested_path\" : \"info\"\n" +
-                    "    }\n" +
-                    "  }, {\n" +
-                    "    \"score\" : {\n" +
-                    "      \"order\" : \"desc\"\n" +
-                    "    }\n" +
-                    "  } ]\n" +
-                    "}";
-            Assert.assertEquals(expected,actual);
-    }
-    @Test
-    public void nestedSortTest2(){
+    public void nestedSort4MatchQueryTest(){
         String sql = "SELECT * FROM test order by nested(a,sum(a.b),a.c=matchQuery(\"百度和谷歌\"))";
         String actual = exec(sql);
         String expected = "{\n" +
@@ -127,7 +48,7 @@ public class NestedSortTest {
     }
 
     @Test
-    public void nestedSortTest3(){
+    public void nestedSort4TermTest(){
         String sql = "SELECT * FROM test order by nested(a,sum(a.b),a.c=term(\"百度和谷歌\"))";
         String actual = exec(sql);
         String expected = "{\n" +
@@ -155,7 +76,7 @@ public class NestedSortTest {
     }
 
     @Test
-    public void nestedSortTest4(){
+    public void nestedSortDefaultTest(){
         String sql = "SELECT * FROM test order by nested(a,sum(a.b),a.c=\"百度和谷歌\")";
         String actual = exec(sql);
         String expected = "{\n" +
@@ -184,6 +105,172 @@ public class NestedSortTest {
                 "}";
         Assert.assertEquals(expected,actual);
     }
+    @Test
+    public void nestedSortRealTest(){
+        String sql = "select * from test where nested(info,info.name=term(\"java\") and info.name=term(\"python\") or info.name=term(\"Hadoop\")) order by nested(info,sum(info.age),info.name=matchQuery(\"java\") and info.name=term(\"python\") and info.name=\"Hadoop\") desc,score desc";
+        String actual = exec(sql);
+        String expected = "{\n" +
+                "  \"from\" : 0,\n" +
+                "  \"size\" : 200,\n" +
+                "  \"query\" : {\n" +
+                "    \"bool\" : {\n" +
+                "      \"must\" : {\n" +
+                "        \"nested\" : {\n" +
+                "          \"query\" : {\n" +
+                "            \"bool\" : {\n" +
+                "              \"must\" : {\n" +
+                "                \"bool\" : {\n" +
+                "                  \"should\" : [ {\n" +
+                "                    \"bool\" : {\n" +
+                "                      \"must\" : [ {\n" +
+                "                        \"term\" : {\n" +
+                "                          \"info.name\" : \"java\"\n" +
+                "                        }\n" +
+                "                      }, {\n" +
+                "                        \"term\" : {\n" +
+                "                          \"info.name\" : \"python\"\n" +
+                "                        }\n" +
+                "                      } ]\n" +
+                "                    }\n" +
+                "                  }, {\n" +
+                "                    \"term\" : {\n" +
+                "                      \"info.name\" : \"Hadoop\"\n" +
+                "                    }\n" +
+                "                  } ]\n" +
+                "                }\n" +
+                "              }\n" +
+                "            }\n" +
+                "          },\n" +
+                "          \"path\" : \"info\"\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  },\n" +
+                "  \"sort\" : [ {\n" +
+                "    \"info.age\" : {\n" +
+                "      \"order\" : \"desc\",\n" +
+                "      \"missing\" : \"_last\",\n" +
+                "      \"mode\" : \"SUM\",\n" +
+                "      \"nested_filter\" : {\n" +
+                "        \"bool\" : {\n" +
+                "          \"should\" : [ {\n" +
+                "            \"match\" : {\n" +
+                "              \"info.name\" : {\n" +
+                "                \"query\" : \"'java'\",\n" +
+                "                \"type\" : \"boolean\"\n" +
+                "              }\n" +
+                "            }\n" +
+                "          }, {\n" +
+                "            \"term\" : {\n" +
+                "              \"info.name\" : \"python\"\n" +
+                "            }\n" +
+                "          }, {\n" +
+                "            \"match\" : {\n" +
+                "              \"info.name\" : {\n" +
+                "                \"query\" : \"Hadoop\",\n" +
+                "                \"type\" : \"phrase\"\n" +
+                "              }\n" +
+                "            }\n" +
+                "          } ]\n" +
+                "        }\n" +
+                "      },\n" +
+                "      \"nested_path\" : \"info\"\n" +
+                "    }\n" +
+                "  }, {\n" +
+                "    \"score\" : {\n" +
+                "      \"order\" : \"desc\"\n" +
+                "    }\n" +
+                "  } ]\n" +
+                "}";
+        Assert.assertEquals(expected,actual);
+    }
+
+    @Test
+    public void nestedSortFactTest(){
+        String sql = "SELECT * FROM fact_index where nested(interest_keyword,interest_keyword.keyword=matchQuery(\"黑白\")) and nested(interest_keyword,interest_keyword.keyword=matchQuery(\"纪实\")) and province = \"北京\" order by nested(interest_keyword, sum(interest_keyword.score),interest_keyword.keyword=matchQuery(\"黑白\") and interest_keyword.keyword=matchQuery(\"纪实\")) desc";
+        String actual = exec(sql);
+        String expected = "{\n" +
+                "  \"from\" : 0,\n" +
+                "  \"size\" : 200,\n" +
+                "  \"query\" : {\n" +
+                "    \"bool\" : {\n" +
+                "      \"must\" : {\n" +
+                "        \"bool\" : {\n" +
+                "          \"must\" : [ {\n" +
+                "            \"nested\" : {\n" +
+                "              \"query\" : {\n" +
+                "                \"bool\" : {\n" +
+                "                  \"must\" : {\n" +
+                "                    \"match\" : {\n" +
+                "                      \"interest_keyword.keyword\" : {\n" +
+                "                        \"query\" : \"黑白\",\n" +
+                "                        \"type\" : \"boolean\"\n" +
+                "                      }\n" +
+                "                    }\n" +
+                "                  }\n" +
+                "                }\n" +
+                "              },\n" +
+                "              \"path\" : \"interest_keyword\"\n" +
+                "            }\n" +
+                "          }, {\n" +
+                "            \"nested\" : {\n" +
+                "              \"query\" : {\n" +
+                "                \"bool\" : {\n" +
+                "                  \"must\" : {\n" +
+                "                    \"match\" : {\n" +
+                "                      \"interest_keyword.keyword\" : {\n" +
+                "                        \"query\" : \"纪实\",\n" +
+                "                        \"type\" : \"boolean\"\n" +
+                "                      }\n" +
+                "                    }\n" +
+                "                  }\n" +
+                "                }\n" +
+                "              },\n" +
+                "              \"path\" : \"interest_keyword\"\n" +
+                "            }\n" +
+                "          }, {\n" +
+                "            \"match\" : {\n" +
+                "              \"province\" : {\n" +
+                "                \"query\" : \"北京\",\n" +
+                "                \"type\" : \"phrase\"\n" +
+                "              }\n" +
+                "            }\n" +
+                "          } ]\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  },\n" +
+                "  \"sort\" : [ {\n" +
+                "    \"interest_keyword.score\" : {\n" +
+                "      \"order\" : \"desc\",\n" +
+                "      \"missing\" : \"_last\",\n" +
+                "      \"mode\" : \"SUM\",\n" +
+                "      \"nested_filter\" : {\n" +
+                "        \"bool\" : {\n" +
+                "          \"should\" : [ {\n" +
+                "            \"match\" : {\n" +
+                "              \"interest_keyword.keyword\" : {\n" +
+                "                \"query\" : \"'黑白'\",\n" +
+                "                \"type\" : \"boolean\"\n" +
+                "              }\n" +
+                "            }\n" +
+                "          }, {\n" +
+                "            \"match\" : {\n" +
+                "              \"interest_keyword.keyword\" : {\n" +
+                "                \"query\" : \"'纪实'\",\n" +
+                "                \"type\" : \"boolean\"\n" +
+                "              }\n" +
+                "            }\n" +
+                "          } ]\n" +
+                "        }\n" +
+                "      },\n" +
+                "      \"nested_path\" : \"interest_keyword\"\n" +
+                "    }\n" +
+                "  } ]\n" +
+                "}";
+        Assert.assertEquals(expected,actual);
+    }
+
 
     public static String exec(String sql){
         String jsonExplanation = "";
