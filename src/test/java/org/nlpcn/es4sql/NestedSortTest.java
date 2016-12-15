@@ -20,8 +20,10 @@ public class NestedSortTest {
         try {
             TransportClient client;
             client = TransportClient.builder().addPlugin(DeleteByQueryPlugin.class).build().addTransportAddress(getTransportAddress());
-            //String sql = "select * from test where nested(info,info.name=term(\"java\") and info.name=term(\"python\") or info.name=term(\"Hadoop\")) order by nested(info,sum(info.age),info.name=\"java\" and info.name=\"python\" and info.name=\"Hadoop\") desc,score desc";
-            String sql = "SELECT * FROM test order by nested(a,sum(a.b),a.c=term(\"hadoop\") and a.c=term(\"百度和谷歌\") or a.c=term(\"test\") or a.c=term(\"test2\"))";
+            String sql = "select * from test where nested(info,info.name=term(\"java\") and info.name=term(\"python\") or info.name=term(\"Hadoop\")) order by nested(info,sum(info.age),info.name=matchQuery(\"java\") and info.name=term(\"python\") and info.name=\"Hadoop\") desc,score desc";
+            //String sql = "SELECT * FROM test order by nested(a,sum(a.b),a.c=matchQuery(\"百度和谷歌\"))";
+            //String sql = "SELECT * FROM test order by nested(a,sum(a.b),a.c=term(\"百度和谷歌\") and a.c=term(\"test\"))";
+            //String sql = "SELECT * FROM test order by nested(a,sum(a.b),a.c=\"百度和谷歌\")";
             //String sql = "SELECT * FROM test where nested(calc_skill_blog,calc_skill_blog.keyword=\"java\")";
             Long now = System.currentTimeMillis();
             SearchDao searchDao = new SearchDao(client);

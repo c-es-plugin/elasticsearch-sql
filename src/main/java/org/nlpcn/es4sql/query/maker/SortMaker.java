@@ -1,5 +1,6 @@
 package org.nlpcn.es4sql.query.maker;
 
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -46,6 +47,7 @@ public class SortMaker extends Maker {
     public static void setCondition(List<Where> conditions, BoolQueryBuilder queryBuilder) {
         String key = "";
         String val = "";
+        String methodName = "";
         for (Where con : conditions) {
             if (con instanceof Condition) {
                 key = ((Condition) con).getName();
@@ -53,16 +55,37 @@ public class SortMaker extends Maker {
                 if (vals.getClass().isArray()) {
                     Object[] md = (Object[]) vals;
                     val = md[0].toString();
+                    if (((Condition) con).getOpear().name().equals("TERM")){
+                        methodName = "term";
+                    }
+                } else if (vals instanceof SQLMethodInvokeExpr) {
+                    methodName = ((SQLMethodInvokeExpr) vals).getMethodName();
+                    val = ((SQLMethodInvokeExpr) vals).getParameters().get(0).toString();
                 } else {
+                    methodName = "";
                     val = vals.toString();
                 }
-                queryBuilder = explanSort(queryBuilder, key, val);
+                queryBuilder = explanSort(queryBuilder, methodName, key, val);
             } else if (con instanceof Where) {
                 List<Where> conWhere = con.getWheres();
                 setCondition(conWhere, queryBuilder);
             }
 
         }
+    }
+
+    public static BoolQueryBuilder explanSort(BoolQueryBuilder queryBuilder, String methodName, String key, String value) {
+        if (methodName.equals("")) {
+            QueryBuilder termQueryBuilder = QueryBuilders.matchPhraseQuery(key, value);
+            queryBuilder = queryBuilder.should(termQueryBuilder);
+        } else if (methodName.equals("matchQuery")) {
+            QueryBuilder termQueryBuilder = QueryBuilders.matchQuery(key, value);
+            queryBuilder = queryBuilder.should(termQueryBuilder);
+        } else if (methodName.equals("term")) {
+            QueryBuilder termQueryBuilder = QueryBuilders.termQuery(key, value);
+            queryBuilder = queryBuilder.should(termQueryBuilder);
+        }
+        return queryBuilder;
     }
 
     public static BoolQueryBuilder explanSort(BoolQueryBuilder queryBuilder, String key, String value) {
