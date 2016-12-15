@@ -21,8 +21,8 @@ public class AnsjAnalyzerImpl implements Analyzer {
             String ip = AnsjElasticConfigurator.ES_IP;
             String port = AnsjElasticConfigurator.ES_PORT;
             String midUrl = "/_cat/analyze?analyzer=query_ansj&text=";
-            //String preUrl = "http://" + ip + ":" + port + midUrl;
-            String preUrl = "http://192.168.25.11:9688/_cat/analyze?analyzer=query_ansj&text=";
+            String preUrl = "http://" + ip + ":" + port + midUrl;
+            //String preUrl = "http://192.168.25.11:9688/_cat/analyze?analyzer=query_ansj&text=";
             //System.out.println(preUrl);
             String enTerm = URLEncoder.encode(term, "UTF-8");
             String url = preUrl + enTerm;
